@@ -1,0 +1,8 @@
+logs/
+scratch_logs/
+.env
+.vscode
+.venv
+cache/
+*.DS_Store
+__pycache__/

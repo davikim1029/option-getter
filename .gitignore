@@ -1,0 +1,11 @@
+.DS_Store
+.env
+cache/
+logs/
+scratch_logs/
+.vscode
+encryption/*.enc
+encryption/*.json
+encryption/*.key
+*.pyc
+data/
