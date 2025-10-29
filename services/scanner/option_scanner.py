@@ -355,10 +355,10 @@ def try_send(filepath: Path):
                 files = {"file": (filepath.name, f, "application/json")}
                 resp = requests.post(server_url, files=files, timeout=5)
             if resp.status_code == 200:
-                print(f"Sent {filepath.name} to server.")
+                logger.logMessage(f"Sent {filepath.name} to server.")
                 # Optionally delete after successful send
                 filepath.unlink()
             else:
-                print(f"[!] Server error {resp.status_code}: keeping file.")
+                logger.logMessage(f"[!] Server error {resp.status_code}: keeping file.")
         except Exception as e:
-            print(f"[!] Network issue: could not send {filepath.name}. Error: {e}")
+            logger.logMessage(f"[!] Network issue: could not send {filepath.name}. Error: {e}")
