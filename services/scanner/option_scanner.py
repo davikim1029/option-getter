@@ -350,7 +350,7 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
 def try_send(filepath: Path):
         try:
             #server_url = "http://<MACBOOK_IP>:8000/ingest"
-            server_url="http://127.0.0.1:8000/api/upload_file"
+            server_url="http://100.80.212.116:8000/api/upload_file"
             with open(filepath, "rb") as f:
                 files = {"file": (filepath.name, f, "application/json")}
                 resp = requests.post(server_url, files=files, timeout=5)
