@@ -4,7 +4,7 @@ import yfinance as yf
 import time as pyTime
 import os
 import json
-from models.option import OptionContract
+from models.option import OptionContract,OptionGreeks
 from models.tickers import fetch_us_tickers_from_finnhub
 from services.core.cache_manager import TickerCache,RateLimitCache
 from datetime import datetime, timedelta, time
@@ -142,7 +142,7 @@ def option_contract_to_feature(opt: OptionContract) -> OptionFeature:
     # Compute days to expiration
     days_to_exp = None
     if opt.expiryDate:
-        days_to_exp = (opt.expiryDate - datetime.utcnow()).total_seconds() / 86400.0
+        days_to_exp = (opt.expiryDate.astimezone() - datetime.now().astimezone()).total_seconds() / 86400.0
 
     # Spread and mid price
     spread = None

@@ -14,6 +14,10 @@ from services.core.cache_manager import (
     TickerMetadata,
     TickerCache,
 )
+import os
+from pathlib import Path
+import zoneinfo
+import requests
 
 from services.scanner.scanner_utils import option_contract_to_feature
 from shared_options import OptionFeature
@@ -53,21 +57,14 @@ _reset_globals()
 # ------------------------- Analysis logic -------------------------
 def save_ticker(ticker, options, context, caches, config, debug=False):
     logger = getLogger()
-    metadata = {}
 
     last_ticker_cache = getattr(caches, "last_seen", None) or LastTickerCache()
-    ticker_cache = getattr(caches, "ticker", None) or TickerCache()
-    ticker_metadata_cache = getattr(caches, "ticker_metadata", None) or TickerMetadata()
-    ticker_name = ticker_cache.get(ticker) or ""
-    processed_osi_keys = set()
-    eval_keys = []
-
+    option_data = getattr(caches, "option_data", None) or TickerCache()
+    
     for opt in options:
         osi_key = getattr(opt, "osiKey", None)
-        processed_osi_keys.add(osi_key)
-        disp = getattr(opt, "displaySymbol", "").split(" ")
-        eval_key = f"{disp[0]} - {' '.join(disp[1:])}" if disp else str(getattr(opt, "displaySymbol", opt))
-        eval_keys.append(eval_key)
+        features = option_contract_to_feature(opt)
+        option_data.add(osi_key,features)
 
         with counter_lock:
             global processed_counter_opts
@@ -88,32 +85,23 @@ def save_ticker(ticker, options, context, caches, config, debug=False):
                 f"[Option Scanner] Thread {threading.current_thread().name} | Processed {processed_counter} tickers. {remaining_ticker_count - total_iterated} Remaining"
             )
 
-    strikes_seen = [getattr(o, "strikePrice", 0) for o in options]
-    expirations_seen = [
-        f"{getattr(o.product, 'expiryYear')}-{getattr(o.product, 'expiryMonth')}-{getattr(o.product, 'expiryDay')}"
-        for o in options
-    ]
-
-    metadata = {
-        "eval_keys": eval_keys,
-        "min_strike": min(strikes_seen, default=None),
-        "max_strike": max(strikes_seen, default=None),
-        "expirations": expirations_seen,
-        "seen_options": list(processed_osi_keys),
-        "last_checked": datetime.now().astimezone().isoformat(),
-    }
-
-    try:
-        ticker_metadata_cache.add(ticker, metadata)
-    except Exception:
-        pass
-
     return
 
 
 # ------------------------- Post-processing (stub) -------------------------
 def post_process_results(results, caches, stop_event=None):
-    getLogger().logMessage("[Option Scanner] Running post_process_results (stub).")
+    option_data = getattr(caches, "option_data", None) or TickerCache()
+    option_data._save_cache()
+
+    local_tz = zoneinfo.ZoneInfo("America/Chicago")
+    now = datetime.now(local_tz)
+    timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+    old_path = option_data.filepath
+    # Use Path / operator to join properly
+    new_path = Path(old_path).parent / f"option_data_{timestamp}.json"
+    os.rename(old_path,new_path)
+    try_send(Path(new_path))
+    getLogger().logMessage("[Option Scanner] Running post_process_results.")
 
 
 # ------------------------- Main scanner entrypoint -------------------------
@@ -287,8 +275,6 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
             if options is not None:
                 try:
                     save_ticker(ticker, options, context, caches, {}, debug)
-                except YFTooManyAttempts as e:
-                    fetch_q.put(ticker)
                 except Exception as e:
                     logger.logMessage(f"[Option Scanner] analyze_ticker {ticker} error: {e}")
             else:
@@ -359,3 +345,20 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
             pass
 
     logger.logMessage("[Option Scanner] Run complete")
+    
+
+def try_send(filepath: Path):
+        try:
+            #server_url = "http://<MACBOOK_IP>:8000/ingest"
+            server_url="http://127.0.0.1:8000/api/upload_file"
+            with open(filepath, "rb") as f:
+                files = {"file": (filepath.name, f, "application/json")}
+                resp = requests.post(server_url, files=files, timeout=5)
+            if resp.status_code == 200:
+                print(f"Sent {filepath.name} to server.")
+                # Optionally delete after successful send
+                filepath.unlink()
+            else:
+                print(f"[!] Server error {resp.status_code}: keeping file.")
+        except Exception as e:
+            print(f"[!] Network issue: could not send {filepath.name}. Error: {e}")
