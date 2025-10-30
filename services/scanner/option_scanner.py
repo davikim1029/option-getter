@@ -162,6 +162,7 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
     api_semaphore = threading.Semaphore(api_semaphore_limit)
 
     def api_worker(stop_evt, ignore_cache=None):
+        global total_iterated
         logger.logMessage(f"[Option Scanner] API worker {threading.current_thread().name} started")
         while not stop_evt.is_set():
             try:
@@ -178,7 +179,6 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
                 except TimeoutError as e:
                     fetch_q.put(ticker)
                 except NoExpiryError as e:
-                    global total_iterated
                     total_iterated += 1
                     error = "No expiry found"
                     if hasattr(e, "args") and len(e.args) > 0:
@@ -196,7 +196,6 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
                     if ignore_cache is not None:
                         ignore_cache.add(ticker, error)
                 except InvalidSymbolError as e:
-                    global total_iterated
                     total_iterated += 1
                     error = "Invalid Symbol found"
                     if hasattr(e, "args") and len(e.args) > 0:
@@ -220,7 +219,6 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
                     if ignore_cache is not None:
                         ignore_cache.add(ticker, error)
                 except NoOptionsError as e:
-                    global total_iterated
                     total_iterated += 1
                     error = "No options found"
                     if hasattr(e, "args") and len(e.args) > 0:
@@ -257,6 +255,7 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
         logger.logMessage(f"[Option Scanner] API worker {threading.current_thread().name} exiting")
 
     def analysis_worker(stop_evt):
+        global total_iterated
         logger.logMessage(f"[Option Scanner] Analysis worker {threading.current_thread().name} started")
         while not stop_evt.is_set():
             try:
@@ -267,7 +266,6 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
                 result_q.task_done()
                 break
             ticker, options = item
-            global total_iterated
             total_iterated += 1
             if options is not None:
                 try:
@@ -327,7 +325,6 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
         logger.logMessage(f"[Option Scanner] post_process_results error: {e}")
 
     #If we've iterated over every ticker,  clear the last_ticker cache 
-    global total_iterated
     if total_iterated == remaining_ticker_count:
         try:
             last_ticker_cache.clear()
