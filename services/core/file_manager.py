@@ -22,11 +22,20 @@ class FileManager:
         self._lock = threading.RLock()
         self._stop_event = threading.Event()
         self.logger = getLogger()
-        self._temp_file_counter = 0
 
         # Ensure directories exist
         self.filepath.parent.mkdir(parents=True, exist_ok=True)
         self.temp_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Scan temp_dir for existing files and set counter
+        existing_files = list(self.temp_dir.glob("*.jsonl"))
+        if existing_files:
+            # Extract numeric parts, find max, start from next
+            max_index = max(int(f.stem) for f in existing_files if f.stem.isdigit())
+            self._temp_file_counter = max_index
+        else:
+            self._temp_file_counter = 0
+
 
         # Initialize main file if empty
         if not self.filepath.exists():
