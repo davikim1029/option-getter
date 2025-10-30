@@ -11,8 +11,6 @@ from services.etrade_consumer import TokenExpiredError, NoOptionsError, NoExpiry
 from services.core.cache_manager import (
     LastTickerCache,
     IgnoreTickerCache,
-    TickerMetadata,
-    TickerCache,
 )
 import os
 from pathlib import Path
