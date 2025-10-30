@@ -324,15 +324,11 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
     if total_iterated == remaining_ticker_count:
         try:
             last_ticker_cache.clear()
+            _reset_globals()
+            logger.logMessage("Last Ticker Cache cleared and globals reset")
         except Exception:
             pass
-
-    #Save off cache for future analysis
-    eval_cache = getattr(caches, "eval", None)
-    if eval_cache is not None:
-        try:
-            eval_cache.copy_cache_to_file()
-        except Exception:
-            pass
+    else:
+        logger.logMessage(f"Total Iterated: {total_iterated}. Remaining Ticker Count: {remaining_ticker_count}")
 
     logger.logMessage("[Option Scanner] Run complete")
