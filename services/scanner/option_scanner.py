@@ -23,8 +23,12 @@ from services.scanner.scanner_utils import option_contract_to_feature
 from shared_options import OptionFeature
 from services.alerts import send_alert
 from services.utils import is_json, write_scratch, get_job_count
+from models.OptionDataManager import OptionDataManager
 import json
 logger = getLogger()
+
+optionDataManager = OptionDataManager()
+
 
 # ------------------------- Globals -------------------------
 counter_lock = threading.Lock()
@@ -59,13 +63,10 @@ def save_ticker(ticker, options, context, caches, config, debug=False):
     logger = getLogger()
 
     last_ticker_cache = getattr(caches, "last_seen", None) or LastTickerCache()
-    option_data = getattr(caches, "option_data", None) or TickerCache()
     
     for opt in options:
-        osi_key = getattr(opt, "osiKey", None)
         features = option_contract_to_feature(opt)
-        option_data.add(osi_key,features)
-
+        optionDataManager.add_option_record(features)
         with counter_lock:
             global processed_counter_opts
             processed_counter_opts += 1
@@ -90,13 +91,12 @@ def save_ticker(ticker, options, context, caches, config, debug=False):
 
 # ------------------------- Post-processing (stub) -------------------------
 def post_process_results(results, caches, stop_event=None):
-    option_data = getattr(caches, "option_data", None) or TickerCache()
-    option_data._save_cache()
 
+    optionDataManager.close()
     local_tz = zoneinfo.ZoneInfo("America/Chicago")
     now = datetime.now(local_tz)
     timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
-    old_path = option_data.filepath
+    old_path = optionDataManager.file_manager.filepath
     # Use Path / operator to join properly
     new_path = Path(old_path).parent / f"option_data_{timestamp}.json"
     os.rename(old_path,new_path)
@@ -353,7 +353,7 @@ def try_send(filepath: Path):
             server_url="http://100.80.212.116:8000/api/upload_file"
             with open(filepath, "rb") as f:
                 files = {"file": (filepath.name, f, "application/json")}
-                resp = requests.post(server_url, files=files, timeout=5)
+                resp = requests.post(server_url, files=files, timeout=900)
             if resp.status_code == 200:
                 logger.logMessage(f"Sent {filepath.name} to server.")
                 # Optionally delete after successful send

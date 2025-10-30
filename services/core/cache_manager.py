@@ -231,11 +231,6 @@ class LastTickerCache(CacheManager):
 class TickerMetadata(CacheManager):
     def __init__(self):
         super().__init__("TickerMetadata Cache","cache/ticker_metadata.json",ttl_days=5)
-        
-class OptionData(CacheManager):
-    def __init__(self):
-        super().__init__("OptionData Cache","data/option_data/option_data.json",ttl_days=1)
-
 
 
 # ----------------------------
@@ -252,7 +247,6 @@ class Caches:
         self.yfin = YFinanceTickerCache()
         self.last_seen = LastTickerCache()
         self.ticker_metadata = TickerMetadata()
-        self.option_data = OptionData()
 
     # Return list of all caches (for loops in scanner)
     def all_caches(self):
@@ -263,7 +257,6 @@ class Caches:
             self.rate,
             self.last_seen,
             self.ticker_metadata,
-            self.option_data
         ]
 
     # Return tuples for autosave loops (for ThreadManager)
@@ -274,7 +267,6 @@ class Caches:
             (self.last_seen.autosave_loop, "Last Ticker Cache Autosave"),
             (self.ticker_metadata.autosave_loop,"Ticker Metadata Cache Autosave"),
             (self.yfin.autosave_loop, "YFinance Cache Autosave"),
-            (self.option_data.autosave_loop, "Option Data Autosave")
         ]
 
     # Clear all caches
