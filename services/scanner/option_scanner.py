@@ -68,7 +68,7 @@ def save_ticker(ticker, options, context, caches, config, debug=False):
         with counter_lock:
             global processed_counter_opts
             processed_counter_opts += 1
-            if processed_counter_opts % 2000 == 0:
+            if processed_counter_opts % 10000 == 0:
                 logger.logMessage(
                     f"[Option Scanner] Thread {threading.current_thread().name} | Processed {processed_counter_opts} options."
                 )

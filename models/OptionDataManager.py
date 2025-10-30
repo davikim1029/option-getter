@@ -11,8 +11,8 @@ class OptionDataManager:
         self.filepath = Path(filepath)
         self.file_manager = FileManager(
             filepath=self.filepath,
-            flush_interval=30,
-            max_buffer_size=500
+            flush_interval=600,
+            max_buffer_size=10000
         )
 
     def add_option_record(self, record: dict):
