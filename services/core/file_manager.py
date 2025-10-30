@@ -3,7 +3,7 @@ import threading
 from pathlib import Path
 from services.core.shutdown_handler import ShutdownManager
 from services.logging.logger_singleton import getLogger
-from services.scanner.option_scanner import try_send
+from services.scanner.scanner_utils import try_send
 
 
 class FileManager:
