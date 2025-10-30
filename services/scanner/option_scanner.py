@@ -327,6 +327,7 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
         logger.logMessage(f"[Option Scanner] post_process_results error: {e}")
 
     #If we've iterated over every ticker,  clear the last_ticker cache 
+    global total_iterated
     if total_iterated == remaining_ticker_count:
         try:
             last_ticker_cache.clear()
