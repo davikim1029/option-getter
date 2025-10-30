@@ -12,10 +12,6 @@ from services.core.cache_manager import (
     LastTickerCache,
     IgnoreTickerCache,
 )
-import os
-from pathlib import Path
-import zoneinfo
-import requests
 
 from services.scanner.scanner_utils import option_contract_to_feature
 from shared_options import OptionFeature
@@ -340,20 +336,3 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
             pass
 
     logger.logMessage("[Option Scanner] Run complete")
-    
-
-def try_send(filepath: Path):
-        try:
-            #server_url = "http://<MACBOOK_IP>:8000/ingest"
-            server_url="http://100.80.212.116:8000/api/upload_file"
-            with open(filepath, "rb") as f:
-                files = {"file": (filepath.name, f, "application/json")}
-                resp = requests.post(server_url, files=files, timeout=900)
-            if resp.status_code == 200:
-                logger.logMessage(f"Sent {filepath.name} to server.")
-                # Optionally delete after successful send
-                filepath.unlink()
-            else:
-                logger.logMessage(f"[!] Server error {resp.status_code}: keeping file.")
-        except Exception as e:
-            logger.logMessage(f"[!] Network issue: could not send {filepath.name}. Error: {e}")

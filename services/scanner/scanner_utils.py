@@ -8,6 +8,10 @@ from models.option import OptionContract,OptionGreeks
 from models.tickers import fetch_us_tickers_from_finnhub
 from services.core.cache_manager import TickerCache,RateLimitCache
 from datetime import datetime, timedelta, time
+import requests
+from services.logging.logger_singleton import getLogger
+from pathlib import Path
+
 
 
 def wait_interruptible(stop_event, seconds):
@@ -186,3 +190,21 @@ def option_contract_to_feature(opt: OptionContract) -> OptionFeature:
     )
 
     return feature
+
+
+def try_send(filepath: Path):
+    logger = getLogger()
+    try:
+        #server_url = "http://<MACBOOK_IP>:8000/ingest"
+        server_url="http://100.80.212.116:8000/api/upload_file"
+        with open(filepath, "rb") as f:
+            files = {"file": (filepath.name, f, "application/json")}
+            resp = requests.post(server_url, files=files, timeout=900)
+        if resp.status_code == 200:
+            logger.logMessage(f"Sent {filepath.name} to server.")
+            # Optionally delete after successful send
+            filepath.unlink()
+        else:
+            logger.logMessage(f"[!] Server error {resp.status_code}: keeping file.")
+    except Exception as e:
+        logger.logMessage(f"[!] Network issue: could not send {filepath.name}. Error: {e}")
