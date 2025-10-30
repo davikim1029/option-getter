@@ -8,3 +8,4 @@ watchdog
 dotenv
 cryptography
 pydantic
+-e /home/dkim/GitHub/options/options-shared/
