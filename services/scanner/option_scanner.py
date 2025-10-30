@@ -178,6 +178,8 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
                 except TimeoutError as e:
                     fetch_q.put(ticker)
                 except NoExpiryError as e:
+                    global total_iterated
+                    total_iterated += 1
                     error = "No expiry found"
                     if hasattr(e, "args") and len(e.args) > 0:
                         e_data = e.args[0]
@@ -194,6 +196,8 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
                     if ignore_cache is not None:
                         ignore_cache.add(ticker, error)
                 except InvalidSymbolError as e:
+                    global total_iterated
+                    total_iterated += 1
                     error = "Invalid Symbol found"
                     if hasattr(e, "args") and len(e.args) > 0:
                         e_data = e.args[0]
@@ -216,6 +220,8 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
                     if ignore_cache is not None:
                         ignore_cache.add(ticker, error)
                 except NoOptionsError as e:
+                    global total_iterated
+                    total_iterated += 1
                     error = "No options found"
                     if hasattr(e, "args") and len(e.args) > 0:
                         e_data = e.args[0]
