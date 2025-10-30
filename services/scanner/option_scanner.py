@@ -89,21 +89,18 @@ def save_ticker(ticker, options, context, caches, config, debug=False):
 
 # ------------------------- Post-processing (stub) -------------------------
 def post_process_results(results, caches, stop_event=None):
-
     optionDataManager.close()
-    local_tz = zoneinfo.ZoneInfo("America/Chicago")
-    now = datetime.now(local_tz)
-    timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
-    old_path = optionDataManager.file_manager.filepath
-    # Use Path / operator to join properly
-    new_path = Path(old_path).parent / f"option_data_{timestamp}.json"
-    os.rename(old_path,new_path)
-    try_send(Path(new_path))
     getLogger().logMessage("[Option Scanner] Running post_process_results.")
 
 
 # ------------------------- Main scanner entrypoint -------------------------
 def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
+    
+    global optionDataManager
+    optionDataManager.stop_event = stop_event
+    optionDataManager.file_manager.stop_event = stop_event
+    
+    
     logger = getLogger()
     logger.logMessage("[Option Scanner] Starting run_option_scan")
     _reset_globals()

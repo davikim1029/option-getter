@@ -1,43 +1,44 @@
-# services/core/file_manager.py
 import json
-import os
 import threading
 from pathlib import Path
 from services.core.shutdown_handler import ShutdownManager
 from services.logging.logger_singleton import getLogger
+from services.scanner.option_scanner import try_send
+
 
 class FileManager:
     """
-    File manager that buffers entries and writes them to temporary JSONL files.
-    Can accept Python objects (with `.dict()` or `__dict__`) or dicts.
-    Optimized for large files and safe shutdown.
+    Thread-safe file manager that buffers entries into temp JSONL files.
+    Periodically flushes to disk and can safely combine completed temp files
+    into bundles for upload or archival.
     """
 
-    def __init__(self, filepath: str, flush_interval: int = 10, max_buffer_size: int = 100):
+    def __init__(self, filepath: str, flush_interval: int = 10, max_buffer_size: int = 100,stop_event = None):
         self.filepath = Path(filepath)
         self.temp_dir = self.filepath.parent / f"{self.filepath.stem}_tmp"
         self.flush_interval = flush_interval
         self.max_buffer_size = max_buffer_size
         self._buffer = []
         self._lock = threading.RLock()
-        self._stop_event = threading.Event()
+        if stop_event is None:
+            self._stop_event = threading.Event()
+        else:
+            self._stop_event = stop_event
         self.logger = getLogger()
 
         # Ensure directories exist
         self.filepath.parent.mkdir(parents=True, exist_ok=True)
         self.temp_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Scan temp_dir for existing files and set counter
+
+        # Continue numbering from existing files
         existing_files = list(self.temp_dir.glob("*.jsonl"))
         if existing_files:
-            # Extract numeric parts, find max, start from next
             max_index = max(int(f.stem) for f in existing_files if f.stem.isdigit())
             self._temp_file_counter = max_index
         else:
             self._temp_file_counter = 0
 
-
-        # Initialize main file if empty
+        # Initialize main file if missing
         if not self.filepath.exists():
             with open(self.filepath, "w", encoding="utf-8") as f:
                 f.write("[]")
@@ -58,6 +59,7 @@ class FileManager:
         # Start background flush thread
         self._thread = threading.Thread(target=self._flush_loop, daemon=True)
         self._thread.start()
+
         self.logger.logMessage(f"[FileManager] Initialized for {self.filepath}")
 
     # ----------------------------
@@ -82,36 +84,68 @@ class FileManager:
                 return
             self._stop_event.set()
 
-        self.logger.logMessage(f"[FileManager] Flushing and closing {self.filepath}...")
+        self.logger.logMessage(f"[FileManager] Closing {self.filepath}...")
         self._flush()
         self._thread.join(timeout=3)
         self.logger.logMessage(f"[FileManager] Closed cleanly.")
 
     def combine_temp_files(self):
-        """Combine all temporary JSONL files into a single JSON array."""
-        all_entries = []
+        """Combine *all* temp files into a single JSON array and delete them."""
         temp_files = sorted(self.temp_dir.glob("*.jsonl"))
-        for temp_file in temp_files:
-            with open(temp_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    all_entries.append(json.loads(line))
-            temp_file.unlink()  # remove temp file after reading
+        if not temp_files:
+            return
+        combined_path = self._combine_files(temp_files, delete=True)
+        try_send(combined_path)
+        self.logger.logMessage(f"[FileManager] Combined and sent all temp files: {combined_path}")
 
-        # Write final JSON array
-        with open(self.filepath, "w", encoding="utf-8") as f:
-            json.dump(all_entries, f, indent=2)
+    def combine_and_rotate(self, bundle_limit: int = 100):
+        """
+        Combine a batch of completed temp files into a JSON bundle for upload.
+        Removes them after sending. Does not block ongoing writes.
+        """
+        with self._lock:
+            temp_files = sorted(self.temp_dir.glob("*.jsonl"))
+            if not temp_files:
+                return
+            bundle_files = temp_files[:bundle_limit]
 
-        # Remove temp directory if empty
-        try:
-            self.temp_dir.rmdir()
-        except OSError:
-            pass
-
-        self.logger.logMessage(f"[FileManager] Combined {len(all_entries)} entries into {self.filepath}")
+        combined_path = self._combine_files(bundle_files, delete=True)
+        if combined_path:
+            self.logger.logMessage(f"[FileManager] Created bundle: {combined_path}")
+            try:
+                try_send(combined_path)
+                self.logger.logMessage(f"[FileManager] Sent bundle: {combined_path}")
+            except Exception as e:
+                self.logger.logMessage(f"[FileManager] Upload failed for {combined_path}: {e}")
 
     # ----------------------------
     # Internal Helpers
     # ----------------------------
+    def _combine_files(self, file_list, delete=False):
+        """Helper: combine multiple .jsonl files into one JSON array bundle."""
+        if not file_list:
+            return None
+
+        all_entries = []
+        for temp_file in file_list:
+            try:
+                with open(temp_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        all_entries.append(json.loads(line))
+                if delete:
+                    temp_file.unlink()
+            except Exception as e:
+                self.logger.logMessage(f"[FileManager] Error reading {temp_file}: {e}")
+
+        if not all_entries:
+            return None
+
+        bundle_path = self.filepath.parent / f"{self.filepath.stem}_bundle_{threading.get_ident()}.json"
+        with open(bundle_path, "w", encoding="utf-8") as f:
+            json.dump(all_entries, f, indent=2)
+
+        return bundle_path
+
     def _flush_loop(self):
         while not self._stop_event.is_set():
             self._flush()
@@ -126,9 +160,6 @@ class FileManager:
 
         try:
             self._write_temp_file(tmp_entries)
-            self.logger.logMessage(
-                f"[FileManager] Flushed {len(tmp_entries)} entries to temp files"
-            )
         except Exception as e:
             self.logger.logMessage(f"[FileManager] Flush error: {e}")
 
