@@ -61,7 +61,7 @@ def option_loop(**kwargs):
                 logger.logMessage("[Option Loop] Wait interrupted")
 
             else:
-                now_dt = datetime.now().astimezone()
+                now_dt = datetime.now()
                 today_start = datetime.combine(now_dt.date(), start_time)
 
                 if now_dt.time() < start_time:
