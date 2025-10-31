@@ -7,10 +7,12 @@ from services.alerts import send_alert
 from services.token_status import TokenStatus
 from services.etrade_consumer import TokenExpiredError
 
+# Get the system’s local timezone
+local_tz = datetime.now().astimezone().tzinfo
 
 # Default values for initial load; will be overridden by kwargs if present
-DEFAULT_START_TIME = dt_time(0,1)
-DEFAULT_END_TIME = dt_time(4,30)
+DEFAULT_START_TIME = dt_time(0, 1, tzinfo=local_tz)
+DEFAULT_END_TIME   = dt_time(16, 30, tzinfo=local_tz)
 DEFAULT_COOLDOWN_SECONDS = 60  # 60 seconds, give the scanner enoung time to drop and reset caches
 
 token_status = TokenStatus()
