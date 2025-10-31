@@ -7,7 +7,7 @@ import json
 from models.option import OptionContract,OptionGreeks
 from models.tickers import fetch_us_tickers_from_finnhub
 from services.core.cache_manager import TickerCache,RateLimitCache
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time,timezone
 import requests
 from services.logging.logger_singleton import getLogger
 from pathlib import Path
@@ -187,6 +187,7 @@ def option_contract_to_feature(opt: OptionContract) -> OptionFeature:
         spread=spread,
         midPrice=mid_price,
         moneyness=moneyness,
+        timestamp=datetime.now(timezone.utc)
     )
 
     return feature
