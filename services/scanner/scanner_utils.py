@@ -187,8 +187,7 @@ def option_contract_to_feature(opt: OptionContract) -> OptionFeature:
         spread=spread,
         midPrice=mid_price,
         moneyness=moneyness,
-        timestamp=datetime.now(timezone.utc)
-    )
+        )
 
     return feature
 

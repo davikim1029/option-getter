@@ -162,11 +162,18 @@ class FileManager:
             self._write_temp_file(tmp_entries)
         except Exception as e:
             self.logger.logMessage(f"[FileManager] Flush error: {e}")
-
+                
     def _write_temp_file(self, entries):
-        """Write a batch of entries to a new temp JSONL file."""
+        """Write a batch of entries to a new temp JSONL file, safely serializing datetimes."""
         self._temp_file_counter += 1
         temp_path = self.temp_dir / f"{self._temp_file_counter:06d}.jsonl"
+
         with open(temp_path, "w", encoding="utf-8") as f:
             for entry in entries:
-                f.write(json.dumps(entry, separators=(",", ":")) + "\n")
+                # If entry is a Pydantic model, use its built-in JSON serialization
+                if hasattr(entry, "json"):
+                    f.write(entry.json(separators=(",", ":")) + "\n")
+                else:
+                    # For dicts or objects, serialize with default=str to handle datetime
+                    f.write(json.dumps(entry, separators=(",", ":"), default=str) + "\n")
+
