@@ -36,8 +36,8 @@ def option_loop(**kwargs):
 
         while not stop_event.is_set():
             # Read dynamic values from kwargs
-            start_time = kwargs.get("start_time") or DEFAULT_START_TIME
-            end_time   = kwargs.get("end_time")   or DEFAULT_END_TIME
+            start_time = DEFAULT_START_TIME
+            end_time   = DEFAULT_END_TIME
             cooldown   = kwargs.get("cooldown_seconds") or DEFAULT_COOLDOWN_SECONDS
             force_first_run = kwargs.get("force_first_run") or False
 
