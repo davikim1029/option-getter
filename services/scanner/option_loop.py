@@ -10,7 +10,7 @@ from services.etrade_consumer import TokenExpiredError
 
 # Default values for initial load; will be overridden by kwargs if present
 DEFAULT_START_TIME = dt_time(0,1)
-DEFAULT_END_TIME = dt_time(23,59)
+DEFAULT_END_TIME = dt_time(4,30)
 DEFAULT_COOLDOWN_SECONDS = 60  # 60 seconds, give the scanner enoung time to drop and reset caches
 
 token_status = TokenStatus()
