@@ -11,8 +11,8 @@ from services.etrade_consumer import TokenExpiredError
 local_tz = datetime.now().astimezone().tzinfo
 
 # Default values for initial load; will be overridden by kwargs if present
-DEFAULT_START_TIME = dt_time(0, 1, tzinfo=local_tz)
-DEFAULT_END_TIME   = dt_time(16, 30, tzinfo=local_tz)
+START_TIME = dt_time(8, 30)   # 8:30 AM
+END_TIME   = dt_time(16, 30)  # 4:30 PM
 DEFAULT_COOLDOWN_SECONDS = 60  # 60 seconds, give the scanner enoung time to drop and reset caches
 
 token_status = TokenStatus()
@@ -36,12 +36,12 @@ def option_loop(**kwargs):
 
         while not stop_event.is_set():
             # Read dynamic values from kwargs
-            start_time = DEFAULT_START_TIME
-            end_time   = DEFAULT_END_TIME
+            start_time = START_TIME
+            end_time   = END_TIME
             cooldown   = kwargs.get("cooldown_seconds") or DEFAULT_COOLDOWN_SECONDS
             force_first_run = kwargs.get("force_first_run") or False
 
-            now = datetime.now().astimezone().time()
+            now = datetime.now().time()
             if start_time <= now <= end_time or force_first_run:
                 try:
                     run_option_scan(stop_event=stop_event, consumer=consumer, caches=caches, debug=debug)
