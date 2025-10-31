@@ -4,6 +4,7 @@ from pathlib import Path
 from services.core.shutdown_handler import ShutdownManager
 from services.logging.logger_singleton import getLogger
 from services.scanner.scanner_utils import try_send
+from datetime import datetime,timezone
 
 
 class FileManager:
@@ -139,8 +140,8 @@ class FileManager:
 
         if not all_entries:
             return None
-
-        bundle_path = self.filepath.parent / f"{self.filepath.stem}_bundle_{threading.get_ident()}.json"
+        timestamp=datetime.now().astimezone().isoformat()
+        bundle_path = self.filepath.parent / f"{self.filepath.stem}_bundle_{timestamp}.json"
         with open(bundle_path, "w", encoding="utf-8") as f:
             json.dump(all_entries, f, indent=2)
 
