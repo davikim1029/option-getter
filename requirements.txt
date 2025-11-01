@@ -8,5 +8,5 @@ watchdog
 dotenv
 cryptography
 pydantic
-holidays
+pandas_market_calendars
 -e /home/dkim/GitHub/options/options-shared/

@@ -11,6 +11,11 @@ from datetime import datetime, timedelta, time,timezone
 import requests
 from services.logging.logger_singleton import getLogger
 from pathlib import Path
+from typing import Optional
+from shared_options.models import OptionFeature 
+import pandas_market_calendars as mcal
+import pytz
+
 
 
 
@@ -133,11 +138,52 @@ def wait_rate_limit(cache: RateLimitCache, key: str):
     # Once slept, remove entry
     with cache._lock:
         cache._cache.pop(key, None)
+        
 
 
-from typing import Optional
-from datetime import datetime
-from shared_options.models import OptionFeature  # your shared class
+def wait_until_market_open(stop_event=None):
+    # Create NYSE calendar
+    nyse = mcal.get_calendar('NYSE')
+    eastern = pytz.timezone("America/New_York")
+
+    """Waits until the next NYSE market open if currently closed."""
+    now = datetime.now(tz=eastern)
+    # Get trading schedule for today and tomorrow
+    schedule = nyse.schedule(start_date=now.date(), end_date=(now + timedelta(days=1)).date())
+
+    if schedule.empty:
+        # Market closed today (holiday or weekend)
+        next_valid_day = nyse.valid_days(start_date=now.date(), end_date=now + timedelta(days=7))[0]
+        next_open = nyse.schedule(start_date=next_valid_day, end_date=next_valid_day).iloc[0]['market_open'].to_pydatetime()
+    else:
+        today_open = schedule.iloc[0]['market_open'].to_pydatetime()
+        today_close = schedule.iloc[0]['market_close'].to_pydatetime()
+
+        if now < today_open:
+            next_open = today_open
+        elif now > today_close:
+            # After close — find next open day
+            now = datetime.now(tz=eastern)
+            start_date = (now + timedelta(days=1)).date()
+            end_date = (now + timedelta(days=7)).date()
+            next_valid_day = nyse.valid_days(start_date=start_date, end_date=end_date)[0]
+            next_open = nyse.schedule(start_date=next_valid_day, end_date=next_valid_day).iloc[0]['market_open'].to_pydatetime()
+        else:
+            # Market is currently open
+            return True
+
+    # Calculate wait time
+    wait_seconds = (next_open - now).total_seconds()
+    hours, rem = divmod(wait_seconds, 3600)
+    mins, secs = divmod(rem, 60)
+    print(f"[Market Hours] Market closed — waiting {int(hours)}h {int(mins)}m {int(secs)}s until next open at {next_open}.")
+
+    wait_interruptible(stop_event, wait_seconds)
+
+    return True
+
+
+
 
 def option_contract_to_feature(opt: OptionContract) -> OptionFeature:
     """
