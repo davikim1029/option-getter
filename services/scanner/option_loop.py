@@ -6,6 +6,9 @@ from services.scanner.scanner_utils import wait_interruptible
 from services.alerts import send_alert
 from services.token_status import TokenStatus
 from services.etrade_consumer import TokenExpiredError
+import holidays
+
+us_holidays = holidays.US(subdiv='NYSE')
 
 # Get the system’s local timezone
 local_tz = datetime.now().astimezone().tzinfo
@@ -42,7 +45,11 @@ def option_loop(**kwargs):
             force_first_run = kwargs.get("force_first_run") or False
 
             now = datetime.now().time()
-            if start_time <= now <= end_time or force_first_run:
+            if (
+                now_dt.weekday() < 5                             # Mon–Fri
+                and now_dt.date() not in us_holidays             # Not a holiday
+                and (start_time <= now <= end_time or force_first_run)  # During market hours or first run
+            ):                   
                 try:
                     run_option_scan(stop_event=stop_event, consumer=consumer, caches=caches, debug=debug)
                 except TokenExpiredError:
@@ -64,17 +71,23 @@ def option_loop(**kwargs):
                 now_dt = datetime.now()
                 today_start = datetime.combine(now_dt.date(), start_time)
 
+                # Figure out next possible start time
                 if now_dt.time() < start_time:
-                    # Next start is today
+                    # Before market opens today — try today
                     next_start = today_start
                 else:
-                    # Next start is tomorrow
+                    # After market closes — try tomorrow
                     next_start = today_start + timedelta(days=1)
 
+                # Skip weekends and holidays
+                while next_start.weekday() >= 5 or next_start.date() in us_holidays:
+                    next_start += timedelta(days=1)
+
+                # Compute wait time
                 seconds_until_start = (next_start - now_dt).total_seconds()
                 wait_time = max(0.1, int(seconds_until_start))  # safe fallback
 
-                # Format nicely for logging
+                # For logging clarity
                 hours, remainder = divmod(wait_time, 3600)
                 minutes, seconds = divmod(remainder, 60)
 
@@ -85,9 +98,12 @@ def option_loop(**kwargs):
                 else:
                     wait_str = f"{seconds}s"
 
-                logger.logMessage(f"[Option Loop] Outside of time schedule, waiting {wait_str} until next start")
+                logger.logMessage(
+                    f"[Option Loop] Outside of time schedule, waiting {wait_str} until next market open at {next_start.strftime('%Y-%m-%d %H:%M')}"
+                )
 
                 wait_interruptible(stop_event, wait_time)
+
         logger.logMessage("Option Loop interrupted. Exiting")
     finally:
         _running = False

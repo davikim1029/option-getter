@@ -8,4 +8,5 @@ watchdog
 dotenv
 cryptography
 pydantic
+holidays
 -e /home/dkim/GitHub/options/options-shared/
