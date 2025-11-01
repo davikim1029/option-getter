@@ -176,7 +176,8 @@ def wait_until_market_open(stop_event=None):
     wait_seconds = (next_open - now).total_seconds()
     hours, rem = divmod(wait_seconds, 3600)
     mins, secs = divmod(rem, 60)
-    print(f"[Market Hours] Market closed — waiting {int(hours)}h {int(mins)}m {int(secs)}s until next open at {next_open}.")
+    logger = getLogger()
+    logger.logMessage(f"[Market Hours] Market closed — waiting {int(hours)}h {int(mins)}m {int(secs)}s until next open at {next_open}.")
 
     wait_interruptible(stop_event, wait_seconds)
 
