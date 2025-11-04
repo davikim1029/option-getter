@@ -154,10 +154,11 @@ def wait_until_market_open(stop_event=None):
     if schedule.empty:
         # Market closed today (holiday or weekend)
         next_valid_day = nyse.valid_days(start_date=now.date(), end_date=now + timedelta(days=7))[0]
-        next_open = nyse.schedule(start_date=next_valid_day, end_date=next_valid_day).iloc[0]['market_open'].to_pydatetime()
+        next_open_utc = nyse.schedule(start_date=next_valid_day, end_date=next_valid_day).iloc[0]['market_open'].to_pydatetime()
+        next_open = next_open_utc.astimezone(eastern)
     else:
-        today_open = schedule.iloc[0]['market_open'].to_pydatetime()
-        today_close = schedule.iloc[0]['market_close'].to_pydatetime()
+        today_open = schedule.iloc[0]['market_open'].to_pydatetime().astimezone(eastern)
+        today_close = schedule.iloc[0]['market_close'].to_pydatetime().astimezone(eastern)
 
         if now < today_open:
             next_open = today_open
@@ -167,10 +168,11 @@ def wait_until_market_open(stop_event=None):
             start_date = (now + timedelta(days=1)).date()
             end_date = (now + timedelta(days=7)).date()
             next_valid_day = nyse.valid_days(start_date=start_date, end_date=end_date)[0]
-            next_open = nyse.schedule(start_date=next_valid_day, end_date=next_valid_day).iloc[0]['market_open'].to_pydatetime()
+            next_open_utc = nyse.schedule(start_date=next_valid_day, end_date=next_valid_day).iloc[0]['market_open'].to_pydatetime()
+            next_open = next_open_utc.astimezone(eastern)
         else:
-            # Market is currently open
             return True
+
 
     # Calculate wait time
     wait_seconds = (next_open - now).total_seconds()
@@ -212,6 +214,7 @@ def option_contract_to_feature(opt: OptionContract) -> OptionFeature:
 
     feature = OptionFeature(
         symbol=opt.symbol,
+        displayName=opt.displaySymbol,
         osiKey=opt.osiKey,
         optionType=1 if opt.optionType.upper() == "CALL" else 0,
         strikePrice=float(opt.strikePrice),
