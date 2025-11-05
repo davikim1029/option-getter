@@ -10,7 +10,7 @@ from services.logging.logger_singleton import getLogger
 logger = getLogger()
 
 
-def send_alert(message: str, debug: bool = False):
+def send_alert(message: str):
     """
     Send an alert via SMS (email-to-text gateway). If the message exceeds
     a single text length, it will be split into multiple chunks.
@@ -49,9 +49,7 @@ def send_alert(message: str, debug: bool = False):
                     sms_msg["Subject"] = ""
 
                 server.send_message(sms_msg)
-                if debug:
-                    logger.logMessage(f"Text part {idx}/{len(chunks)} sent to {SMS_TO}")
-
+                
                 # Avoid tripping carrier limits or rate filters
                 time.sleep(2)
 

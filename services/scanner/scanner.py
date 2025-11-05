@@ -32,12 +32,12 @@ def _autosave_loop(stop_event, cache):
 # ---------------------------
 # Main scanner runner
 # ---------------------------
-def run_scan(stop_event, mode=None, consumer=None, debug=False):
+def run_scan(stop_event, mode=None, consumer=None):
     logger = getLogger()
     logger.logMessage("[Scanner] Initializing...")
 
     if consumer is None:
-        consumer = EtradeConsumer(sandbox=False, debug=debug)
+        consumer = EtradeConsumer(sandbox=False)
 
     if (ThreadManager._caches):
         caches = ThreadManager._caches
@@ -90,7 +90,6 @@ def run_scan(stop_event, mode=None, consumer=None, debug=False):
           "stop_event":stop_event,
           "consumer": consumer,
           "caches": caches,
-          "debug": debug,
           "start_time": getattr(opt_mod, "DEFAULT_START_TIME", None),
           "end_time": getattr(opt_mod, "DEFAULT_END_TIME", None),
           "cooldown_seconds": getattr(opt_mod, "DEFAULT_COOLDOWN_SECONDS", 300),

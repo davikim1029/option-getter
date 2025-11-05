@@ -43,8 +43,7 @@ class InvalidSymbolError(Exception):
 
 
 class EtradeConsumer:
-    def __init__(self, apiWorker: ApiWorker = None, sandbox=False, debug=False):
-        self.debug = debug
+    def __init__(self, apiWorker: ApiWorker = None, sandbox=False):
         self.sandbox = sandbox
         self.apiWorker = apiWorker
         self.token_status = TokenStatus()

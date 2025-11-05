@@ -21,7 +21,6 @@ def option_loop(**kwargs):
     stop_event = kwargs.get("stop_event")
     consumer = kwargs.get("consumer")
     caches = kwargs.get("caches")
-    debug = kwargs.get("debug", False)
     logger = getLogger()
     
     global _running
@@ -42,7 +41,7 @@ def option_loop(**kwargs):
             now = datetime.now().time()
             if wait_until_market_open(stop_event) or force_first_run:                
                 try:
-                    run_option_scan(stop_event=stop_event, consumer=consumer, caches=caches, debug=debug)
+                    run_option_scan(stop_event=stop_event, consumer=consumer, caches=caches)
                 except TokenExpiredError:
                     logger.logMessage("[Option Loop] Token expired, pausing scanner.")
                     send_alert("E*TRADE token expired. Please re-authenticate.")

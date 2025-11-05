@@ -76,7 +76,7 @@ def main():
             logger.logMessage("Resetting thread manager")
             manager.reset_for_new_scan()                      
             logger.logMessage("Scanner restarting")
-            start_scanner(debug=False)
+            start_scanner()
             
         else:              
             mode = get_mode_from_prompt()
@@ -85,11 +85,6 @@ def main():
                 ThreadManager.instance().stop_all()
                 sys.exit(0)
                 break
-
-            debug = False
-
-            # Convert sandbox argument to boolean
-            useSandbox = False
             
             # --- Mode Handling ---
             if mode == "scan":
@@ -97,7 +92,7 @@ def main():
                 ShutdownManager.init(error_logger=logger.logMessage)
                 tm = ThreadManager.instance()
                 tm.reset_for_new_scan()
-                start_scanner(debug=debug)
+                start_scanner()
                 tm.wait_for_shutdown()
                 
             elif mode == "refresh-token":

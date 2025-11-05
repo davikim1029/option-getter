@@ -5,7 +5,7 @@ from pathlib import Path
 import os
 from services.logging.logger_singleton import getLogger
 
-def start_scanner(debug=False):
+def start_scanner():
     logger = getLogger()
         
     try:
@@ -15,7 +15,7 @@ def start_scanner(debug=False):
         manager.add_thread(
             name="ScannerParent",
             target_func=run_scan,
-            kwargs={"mode": None, "debug": debug},
+            kwargs={"mode": None},
             daemon=True,
             reload_files=[str(Path("services/scanner/scanner.py").resolve())],
             parent=None

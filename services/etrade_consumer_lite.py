@@ -14,8 +14,7 @@ TOKEN_LIFETIME_DAYS = 90
 
 
 class EtradeConsumerLite:
-    def __init__(self, sandbox=False, debug=False):
-        self.debug = debug
+    def __init__(self, sandbox=False):
         self.sandbox = sandbox        
         envType = "nonProd" if sandbox else "prod"
 

@@ -53,7 +53,7 @@ _reset_globals()
 
 
 # ------------------------- Analysis logic -------------------------
-def save_ticker(ticker, options, context, caches, config, debug=False):
+def save_ticker(ticker, options, context, caches, config):
     logger = getLogger()
 
     last_ticker_cache = getattr(caches, "last_seen", None) or LastTickerCache()
@@ -90,7 +90,7 @@ def post_process_results(results, caches, stop_event=None):
 
 
 # ------------------------- Main scanner entrypoint -------------------------
-def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
+def run_option_scan(stop_event, consumer=None, caches=None):
     
     global optionDataManager
     optionDataManager.stop_event = stop_event
@@ -269,7 +269,7 @@ def run_option_scan(stop_event, consumer=None, caches=None, debug=False):
             total_iterated += 1
             if options is not None:
                 try:
-                    save_ticker(ticker, options, context, caches, {}, debug)
+                    save_ticker(ticker, options, context, caches, {})
                 except Exception as e:
                     logger.logMessage(f"[Option Scanner] analyze_ticker {ticker} error: {e}")
             else:
