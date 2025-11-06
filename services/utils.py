@@ -10,7 +10,7 @@ import threading
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from services.logging.logger_singleton import getLogger
-
+import sys
 
 
 
@@ -269,3 +269,10 @@ def run_parallel(fn, items, stop_event=None, collect_errors=True):
                 else:
                     raise
     return results, errors
+
+def is_interactive():
+    """Detects whether this process is running interactively (e.g., not as a daemon)."""
+    try:
+        return sys.stdin.isatty() and sys.stdout.isatty()
+    except Exception:
+        return False

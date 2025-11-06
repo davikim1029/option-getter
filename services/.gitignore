@@ -6,3 +6,5 @@ scratch_logs/
 cache/
 *.DS_Store
 __pycache__/
+*.pid
+*.log

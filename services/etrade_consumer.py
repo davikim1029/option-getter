@@ -15,6 +15,8 @@ from services.logging.logger_singleton import getLogger
 from services.token_status import TokenStatus
 from services.utils import write_scratch
 import enum
+from utils import is_interactive
+from alerts import send_alert
 
 TOKEN_LIFETIME_DAYS = 90
 
@@ -41,9 +43,11 @@ class InvalidSymbolError(Exception):
     """Raised when a ticker has no options."""
     pass
 
+token_status = TokenStatus()
 
 class EtradeConsumer:
-    def __init__(self, apiWorker: ApiWorker = None, sandbox=False):
+    def __init__(self, apiWorker: ApiWorker = None, sandbox=False, debug=False):
+        self.debug = debug
         self.sandbox = sandbox
         self.apiWorker = apiWorker
         self.token_status = TokenStatus()
@@ -222,19 +226,31 @@ class EtradeConsumer:
         # Check token age
         local_tz = datetime.now().astimezone().tzinfo
         token_age_days = (datetime.now().astimezone() - datetime.fromtimestamp(created_at, tz=local_tz)).days
+
+        
         if (not self.oauth_token or token_age_days >= TOKEN_LIFETIME_DAYS) and generate_new_token:
-            self.logger.logMessage(f"Token missing or expired (age={token_age_days}d). Generating new token...")
-            if not self.generate_token():
-                raise Exception("Failed to generate new OAuth token.")
+            if not is_interactive():
+                send_alert("Token found invalid, waiting for token to be refreshed")
+                self.logger.logMessage("Running as background job and token invalid, waiting for token refresh")
+                token_status.wait_until_valid()
+            else:
+                self.logger.logMessage(f"Token missing or expired (age={token_age_days}d). Generating new token...")
+                if not self.generate_token():
+                    raise Exception("Failed to generate new OAuth token.")
         else:
             # Extra check: make sure the token actually works with the API
             if not self._check_session_valid():
-                if generate_new_token:
-                    self.logger.logMessage("Token invalid according to API. Generating new token...")
-                    if not self.generate_token():
-                        raise Exception("Failed to generate new OAuth token.")
+                if not is_interactive():
+                    send_alert("Token found invalid, waiting for token to be refreshed")
+                    self.logger.logMessage("Running as background job and token invalid, waiting for token refresh")
+                    token_status.wait_until_valid()
                 else:
-                    self.logger.logMessage("Existing token invalid but not set up to generate new token")
+                    if generate_new_token:
+                        self.logger.logMessage("Token invalid according to API. Generating new token...")
+                        if not self.generate_token():
+                            raise Exception("Failed to generate new OAuth token.")
+                    else:
+                        self.logger.logMessage("Existing token invalid but not set up to generate new token")
             else:
                 self.logger.logMessage("Loaded token valid")
 

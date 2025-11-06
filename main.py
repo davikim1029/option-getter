@@ -1,6 +1,8 @@
 # main.py
 import os
 import sys
+import time as pyTime
+import argparse
 from dotenv import load_dotenv
 from services.utils import yes_no
 from services.etrade_consumer import force_generate_new_token
@@ -9,6 +11,92 @@ from services.core.shutdown_handler import ShutdownManager
 from services.scanner.scanner_entry import start_scanner
 from services.threading.thread_manager import ThreadManager
 from services.utils import is_reload_flag_set,clear_reload_flag
+
+
+import sys
+import os
+import subprocess
+import signal
+from pathlib import Path
+from collections import deque
+from logging import FileHandler
+from pathlib import Path
+from collections import deque
+from logging import FileHandler
+# -----------------------------
+# Paths & Constants
+# -----------------------------
+PID_FILE = Path("scanner_server.pid")
+MAIN_FILE = Path("main.py")  # entrypoint of your scanner
+SCANNER_CMD = [sys.executable, str(MAIN_FILE), "--mode", "scan"]
+
+logger = getLogger()
+LOG_FILE = Path("option_getter_server.log")
+for handler in logger.logger.handlers:
+    if isinstance(handler, FileHandler):
+        LOG_FILE = Path(handler.baseFilename)
+        break # Assuming you only care about the first FileHandler found
+
+
+
+# -----------------------------
+# Helper Functions
+# -----------------------------
+def is_scanner_running():
+    if not PID_FILE.exists():
+        return False
+    try:
+        pid = int(PID_FILE.read_text())
+        os.kill(pid, 0)
+        return True
+    except (ValueError, ProcessLookupError):
+        PID_FILE.unlink(missing_ok=True)
+        return False
+
+
+def start_scanner_server():
+    if is_scanner_running():
+        print("Scanner is already running.")
+        return
+
+    if PID_FILE.exists():
+        PID_FILE.unlink(missing_ok=True)
+
+    with LOG_FILE.open("a") as log_file:
+        process = subprocess.Popen(
+            SCANNER_CMD,
+            stdout=log_file,
+            stderr=log_file,
+        )
+
+    PID_FILE.write_text(str(process.pid))
+    print(f"Scanner started with PID {process.pid}, logging to {LOG_FILE}")
+
+
+def stop_scanner_server():
+    if not PID_FILE.exists():
+        print("No PID file found. Scanner may not be running.")
+        return
+
+    pid = int(PID_FILE.read_text())
+    try:
+        os.kill(pid, signal.SIGTERM)
+        print(f"Sent SIGTERM to PID {pid}")
+        for _ in range(10):
+            pyTime.sleep(0.5)
+            os.kill(pid, 0)
+    except ProcessLookupError:
+        print("Process not found (already stopped).")
+    PID_FILE.unlink(missing_ok=True)
+    print("Scanner stopped.")
+
+
+def check_scanner_server():
+    if is_scanner_running():
+        pid = int(PID_FILE.read_text())
+        print(f"Scanner is running with PID {pid}")
+    else:
+        print("Scanner is not running.")
 
 
 # Disable GPU / MPS fallback
@@ -24,6 +112,9 @@ def get_mode_from_prompt():
     modes = [
         ("scan", "Run scanner (alerts only)"),
         ("refresh-token", "Refresh the Etrade token"),
+        ("start-server", "Start the alerts server"),
+        ("stop-server","Stop the alerts server"),
+        ("check-server","Check the alerts server status"),
         ("quit", "Exit program")
     ]
 
@@ -65,6 +156,9 @@ def main():
     
     load_dotenv()
 
+    parser = argparse.ArgumentParser(description="OptionsAlerts CLI")
+    parser.add_argument("--mode", help="Mode to run")
+    args = parser.parse_args()
     
     while True:
         
@@ -79,7 +173,8 @@ def main():
             start_scanner()
             
         else:              
-            mode = get_mode_from_prompt()
+            mode = args.mode.lower() if args.mode else get_mode_from_prompt()
+            args.mode = None #After get it mode the first time, reset for additional iterations
             
             if mode == "quit":
                 ThreadManager.instance().stop_all()
@@ -97,6 +192,16 @@ def main():
                 
             elif mode == "refresh-token":
                 force_generate_new_token()
+                
+            elif mode == "start-server":
+                start_scanner_server()                
+                
+            elif mode == "stop-server":
+                stop_scanner_server()
+             
+            elif mode == "check-server":
+                check_scanner_server()
+                       
                         
             else:
                 print("Invalid mode selected.")
