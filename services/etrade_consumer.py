@@ -15,8 +15,8 @@ from services.logging.logger_singleton import getLogger
 from services.token_status import TokenStatus
 from services.utils import write_scratch
 import enum
-from utils import is_interactive
-from alerts import send_alert
+from services.utils import is_interactive
+from services.alerts import send_alert
 
 TOKEN_LIFETIME_DAYS = 90
 
