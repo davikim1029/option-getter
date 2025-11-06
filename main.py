@@ -5,24 +5,16 @@ import time as pyTime
 import argparse
 from dotenv import load_dotenv
 from services.utils import yes_no
-from services.etrade_consumer import force_generate_new_token
-from services.logging.logger_singleton import getLogger
-from services.core.shutdown_handler import ShutdownManager
-from services.scanner.scanner_entry import start_scanner
-from services.threading.thread_manager import ThreadManager
-from services.utils import is_reload_flag_set,clear_reload_flag
-
-
-import sys
-import os
 import subprocess
 import signal
 from pathlib import Path
-from collections import deque
 from logging import FileHandler
 from pathlib import Path
-from collections import deque
 from logging import FileHandler
+from services.logging.logger_singleton import getLogger
+from services.utils import is_reload_flag_set,clear_reload_flag
+
+
 # -----------------------------
 # Paths & Constants
 # -----------------------------
@@ -146,7 +138,27 @@ def get_mode_from_prompt():
     #If we somehow are here, exit
     return "quit"
 
+def scan_lazy():
+    from services.core.shutdown_handler import ShutdownManager
+    ShutdownManager.init(error_logger=logger.logMessage)
+    from services.scanner.scanner_entry import start_scanner
+    # Initialize shutdown manager
+    tm = ThreadManager.instance()
+    tm.reset_for_new_scan()
+    start_scanner()
+    tm.wait_for_shutdown()
 
+def reload_lazy():
+    from services.scanner.scanner_entry import start_scanner
+    from services.threading.thread_manager import ThreadManager   
+    clear_reload_flag()
+
+    #Wait for threading to reset
+    manager = ThreadManager.instance()
+    logger.logMessage("Resetting thread manager")
+    manager.reset_for_new_scan()                      
+    logger.logMessage("Scanner restarting")
+    start_scanner()
 
 def main():
     # Ensure directories exist
@@ -158,19 +170,11 @@ def main():
     parser = argparse.ArgumentParser(description="OptionsAlerts CLI")
     parser.add_argument("--mode", help="Mode to run")
     args = parser.parse_args()
-    
     while True:
         
         if is_reload_flag_set():
-            clear_reload_flag()
-            
-            #Wait for threading to reset
-            manager = ThreadManager.instance()
-            logger.logMessage("Resetting thread manager")
-            manager.reset_for_new_scan()                      
-            logger.logMessage("Scanner restarting")
-            start_scanner()
-            
+            reload_lazy()
+      
         else:              
             mode = args.mode.lower() if args.mode else get_mode_from_prompt()
             args.mode = None #After get it mode the first time, reset for additional iterations
@@ -182,14 +186,10 @@ def main():
             
             # --- Mode Handling ---
             if mode == "scan":
-                # Initialize shutdown manager
-                ShutdownManager.init(error_logger=logger.logMessage)
-                tm = ThreadManager.instance()
-                tm.reset_for_new_scan()
-                start_scanner()
-                tm.wait_for_shutdown()
+                scan_lazy()
                 
             elif mode == "refresh-token":
+                from services.etrade_consumer import force_generate_new_token
                 force_generate_new_token()
                 
             elif mode == "start-server":
@@ -200,8 +200,7 @@ def main():
              
             elif mode == "check-server":
                 check_scanner_server()
-                       
-                        
+                                 
             else:
                 print("Invalid mode selected.")
           
