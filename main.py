@@ -135,10 +135,9 @@ def get_mode_from_prompt():
             pass
         print("Invalid choice, try again.")
           
-    #If we somehow are here, exit
-    return "quit"
 
 def scan_lazy():
+    from services.threading.thread_manager import ThreadManager   
     from services.core.shutdown_handler import ShutdownManager
     ShutdownManager.init(error_logger=logger.logMessage)
     from services.scanner.scanner_entry import start_scanner
@@ -147,6 +146,7 @@ def scan_lazy():
     tm.reset_for_new_scan()
     start_scanner()
     tm.wait_for_shutdown()
+    ThreadManager.instance().stop_all()
 
 def reload_lazy():
     from services.scanner.scanner_entry import start_scanner
@@ -159,6 +159,9 @@ def reload_lazy():
     manager.reset_for_new_scan()                      
     logger.logMessage("Scanner restarting")
     start_scanner()
+    ThreadManager.instance().stop_all()
+    
+
 
 def main():
     # Ensure directories exist
@@ -180,8 +183,6 @@ def main():
             args.mode = None #After get it mode the first time, reset for additional iterations
             
             if mode == "quit":
-                ThreadManager.instance().stop_all()
-                sys.exit(0)
                 break
             
             # --- Mode Handling ---
@@ -204,9 +205,6 @@ def main():
             else:
                 print("Invalid mode selected.")
           
-        #force shutdown of threads  
-        ThreadManager.instance().stop_all()
-
 
 
 if __name__ == "__main__":
