@@ -229,11 +229,11 @@ class EtradeConsumer:
 
         
         if (not self.oauth_token or token_age_days >= TOKEN_LIFETIME_DAYS) and generate_new_token:
-            self.logger.logMessage(f"Is Interactive: {is_interactive()}")
-            if not is_interactive() and token_status.is_valid():
-                send_alert("Token found invalid / expired, waiting for token to be refreshed")
-                self.logger.logMessage("Running as background job and token invalid, waiting for token refresh")
-                token_status.wait_until_valid()
+            if not is_interactive():
+                if not token_status.is_valid():
+                    send_alert("Token found invalid / expired, waiting for token to be refreshed")
+                    self.logger.logMessage("Running as background job and token invalid, waiting for token refresh")
+                    token_status.wait_until_valid()
             else:
                 self.logger.logMessage(f"Token missing or expired (age={token_age_days}d). Generating new token...")
                 if not self.generate_token():
@@ -241,11 +241,11 @@ class EtradeConsumer:
         else:
             # Extra check: make sure the token actually works with the API
             if not self._check_session_valid():
-                self.logger.logMessage(f"Is Interactive2: {is_interactive()}")
-                if not is_interactive() and not token_status.is_valid():
-                    send_alert("Token found invalid, waiting for token to be refreshed")
-                    self.logger.logMessage("Running as background job and token invalid, waiting for token refresh")
-                    token_status.wait_until_valid()
+                if not is_interactive():
+                    if not token_status.is_valid():
+                        send_alert("Token found invalid, waiting for token to be refreshed")
+                        self.logger.logMessage("Running as background job and token invalid, waiting for token refresh")
+                        token_status.wait_until_valid()
                 else:
                     if generate_new_token:
                         self.logger.logMessage("Token invalid according to API. Generating new token...")
