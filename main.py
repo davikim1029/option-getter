@@ -151,7 +151,6 @@ def get_mode_from_prompt():
 def main():
     # Ensure directories exist
     os.makedirs("cache", exist_ok=True)
-    logger = getLogger()
     logger.logMessage("Script started.")
     
     load_dotenv()
