@@ -229,8 +229,8 @@ class EtradeConsumer:
 
         
         if (not self.oauth_token or token_age_days >= TOKEN_LIFETIME_DAYS) and generate_new_token:
-            if not is_interactive() and not self._check_session_valid():
-                send_alert("Token found invalid, waiting for token to be refreshed")
+            if not is_interactive() and token_status.is_valid():
+                send_alert("Token found invalid / expired, waiting for token to be refreshed")
                 self.logger.logMessage("Running as background job and token invalid, waiting for token refresh")
                 token_status.wait_until_valid()
             else:
@@ -240,7 +240,7 @@ class EtradeConsumer:
         else:
             # Extra check: make sure the token actually works with the API
             if not self._check_session_valid():
-                if not is_interactive():
+                if not is_interactive() and not token_status.is_valid():
                     send_alert("Token found invalid, waiting for token to be refreshed")
                     self.logger.logMessage("Running as background job and token invalid, waiting for token refresh")
                     token_status.wait_until_valid()
