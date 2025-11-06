@@ -57,6 +57,7 @@ def start_scanner_server():
     with LOG_FILE.open("a") as log_file:
         process = subprocess.Popen(
             SCANNER_CMD,
+            stdout=subprocess.DEVNULL, #logger prints to log info and stdout so redirecting stdout to null
             stderr=log_file,
         )
 
