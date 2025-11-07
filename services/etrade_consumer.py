@@ -254,6 +254,7 @@ class EtradeConsumer:
                         self.logger.logMessage("Existing token invalid but not set up to generate new token")
             else:
                 self.logger.logMessage("Loaded token valid")
+                self.token_status.set_status(True)
 
 
 
