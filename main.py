@@ -57,9 +57,13 @@ def start_scanner_server():
     with LOG_FILE.open("a") as log_file:
         process = subprocess.Popen(
             SCANNER_CMD,
-            stdout=subprocess.DEVNULL, #logger prints to log info and stdout so redirecting stdout to null
-            stderr=subprocess.DEVNULL,
+            stdout=log_file,
+            stderr=log_file,
+            start_new_session=True,
+            close_fds=True,
+            env=os.environ.copy()
         )
+
 
     PID_FILE.write_text(str(process.pid))
     print(f"Scanner started with PID {process.pid}, logging to {LOG_FILE}")

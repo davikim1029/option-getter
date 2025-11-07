@@ -30,7 +30,7 @@ class Logger:
         self._file_handler = fh
         self._console_handler = ch
 
-    def logMessage(self, message, console=True, file=True):
+    def logMessage(self, message, console=False, file=True):
         # Temporarily enable/disable handlers
         self._file_handler.setLevel(logging.INFO if file else logging.CRITICAL+1)
         self._console_handler.setLevel(logging.INFO if console else logging.CRITICAL+1)
