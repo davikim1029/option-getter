@@ -140,6 +140,8 @@ def run_option_scan(stop_event, consumer=None, caches=None):
 
     logger.logMessage(f"[Option Scanner] {start_index} tickers processed earlier. {remaining_ticker_count} remaining.")
 
+    consumer.token_status.is_valid()
+
     context = {"consumer": consumer}
     try:
         context["exposure"] = consumer.get_open_exposure()
