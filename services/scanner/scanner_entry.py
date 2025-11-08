@@ -3,7 +3,7 @@ from services.threading.thread_manager import ThreadManager
 from services.scanner.scanner import run_scan
 from pathlib import Path
 import os
-from services.logging.logger_singleton import getLogger
+from shared_options.log.logger_singleton import getLogger
 
 def start_scanner():
     logger = getLogger()

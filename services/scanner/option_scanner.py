@@ -3,11 +3,11 @@ import threading
 import queue
 from datetime import datetime, timezone
 from dataclasses import dataclass
-from services.logging.logger_singleton import getLogger
+from shared_options.log.logger_singleton import getLogger
 from services.scanner.scanner_utils import get_active_tickers
-from services.token_status import TokenStatus
+from shared_options.services.token_status import TokenStatus
 from services.scanner.YFinanceFetcher import YFTooManyAttempts
-from services.etrade_consumer import TokenExpiredError, NoOptionsError, NoExpiryError, InvalidSymbolError
+from shared_options.services.etrade_consumer import TokenExpiredError, NoOptionsError, NoExpiryError, InvalidSymbolError
 from services.core.cache_manager import (
     LastTickerCache,
     IgnoreTickerCache,
@@ -15,9 +15,9 @@ from services.core.cache_manager import (
 
 from services.scanner.scanner_utils import option_contract_to_feature
 from shared_options import OptionFeature
-from services.alerts import send_alert
-from services.utils import is_json, write_scratch, get_job_count
-from models.OptionDataManager import OptionDataManager
+from shared_options.services.alerts import send_alert
+from shared_options.services.utils import is_json, write_scratch, get_job_count
+from shared_options.models.OptionDataManager import OptionDataManager
 import json
 logger = getLogger()
 

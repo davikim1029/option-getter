@@ -2,7 +2,7 @@ import time
 import yfinance as yf
 from datetime import datetime, timedelta
 from services.core.cache_manager import RateLimitCache
-from services.logging.logger_singleton import getLogger
+from shared_options.log.logger_singleton import getLogger
 from services.scanner.scanner_utils import is_rate_limited, wait_rate_limit
 
 class YFTooManyAttempts(Exception):

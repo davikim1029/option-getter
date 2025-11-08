@@ -5,18 +5,17 @@ import queue
 from pathlib import Path
 import time as pyTime
 
-from services.logging.logger_singleton import getLogger
-from services.etrade_consumer import EtradeConsumer
+from shared_options.log.logger_singleton import getLogger
+from shared_options.services.etrade_consumer import EtradeConsumer
 from services.core.shutdown_handler import ShutdownManager
 from services.core.cache_manager import Caches
 import services.threading.api_worker as api_worker_mod
 
 from services.scanner import option_loop as opt_mod
-from services.utils import get_project_root_os
+from shared_options.services.utils import get_project_root_os
 
 
 from services.threading.thread_manager import ThreadManager
-from services.scanner.scanner_utils import wait_interruptible
 
 # ---------------------------
 # Cache autosave wrapper

@@ -6,9 +6,9 @@ import sys
 import importlib
 from pathlib import Path
 from datetime import datetime
-from services.logging.logger_singleton import getLogger
+from shared_options.log.logger_singleton import getLogger
 from services.helpers import snapshot_module
-from services.utils import set_reload_flag
+from shared_options.services.utils import set_reload_flag
 from services.core.cache_manager import Caches
 
 class ThreadWrapper(threading.Thread):

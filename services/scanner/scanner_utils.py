@@ -4,27 +4,11 @@ import yfinance as yf
 import time as pyTime
 import os
 import json
-from models.option import OptionContract,OptionGreeks
-from models.tickers import fetch_us_tickers_from_finnhub
+from shared_options.models.tickers import fetch_us_tickers_from_finnhub
 from services.core.cache_manager import TickerCache,RateLimitCache
 from datetime import datetime, timedelta, time,timezone
-import requests
-from services.logging.logger_singleton import getLogger
-from pathlib import Path
-from typing import Optional
-from shared_options.models import OptionFeature 
 import pandas_market_calendars as mcal
 import pytz
-
-
-
-
-def wait_interruptible(stop_event, seconds):
-    """Sleep in small chunks so stop_event can interrupt immediately."""
-    end_time = pyTime.time() + seconds
-    while pyTime.time() < end_time and not stop_event.is_set():
-        pyTime.sleep(0.5)
-
 
 
 ################################ TICKER CACHE ####################################
@@ -139,122 +123,3 @@ def wait_rate_limit(cache: RateLimitCache, key: str):
     with cache._lock:
         cache._cache.pop(key, None)
         
-
-
-def wait_until_market_open(stop_event=None):
-    # Create NYSE calendar
-    nyse = mcal.get_calendar('NYSE')
-    eastern = pytz.timezone("America/New_York")
-
-    """Waits until the next NYSE market open if currently closed."""
-    now = datetime.now(tz=eastern)
-    # Get trading schedule for today and tomorrow
-    schedule = nyse.schedule(start_date=now.date(), end_date=(now + timedelta(days=1)).date())
-
-    if schedule.empty:
-        # Market closed today (holiday or weekend)
-        next_valid_day = nyse.valid_days(start_date=now.date(), end_date=now + timedelta(days=7))[0]
-        next_open_utc = nyse.schedule(start_date=next_valid_day, end_date=next_valid_day).iloc[0]['market_open'].to_pydatetime()
-        next_open = next_open_utc.astimezone(eastern)
-    else:
-        today_open = schedule.iloc[0]['market_open'].to_pydatetime().astimezone(eastern)
-        today_close = schedule.iloc[0]['market_close'].to_pydatetime().astimezone(eastern)
-
-        if now < today_open:
-            next_open = today_open
-        elif now > today_close:
-            # After close — find next open day
-            now = datetime.now(tz=eastern)
-            start_date = (now + timedelta(days=1)).date()
-            end_date = (now + timedelta(days=7)).date()
-            next_valid_day = nyse.valid_days(start_date=start_date, end_date=end_date)[0]
-            next_open_utc = nyse.schedule(start_date=next_valid_day, end_date=next_valid_day).iloc[0]['market_open'].to_pydatetime()
-            next_open = next_open_utc.astimezone(eastern)
-        else:
-            return True
-
-
-    # Calculate wait time
-    wait_seconds = (next_open - now).total_seconds()
-    hours, rem = divmod(wait_seconds, 3600)
-    mins, secs = divmod(rem, 60)
-    logger = getLogger()
-    logger.logMessage(f"[Market Hours] Market closed — waiting {int(hours)}h {int(mins)}m {int(secs)}s until next open at {next_open}.")
-
-    wait_interruptible(stop_event, wait_seconds)
-
-    return True
-
-
-
-
-def option_contract_to_feature(opt: OptionContract) -> OptionFeature:
-    """
-    Convert an OptionContract instance into a shared OptionFeature Pydantic model.
-    """
-    # Compute days to expiration
-    days_to_exp = None
-    if opt.expiryDate:
-        days_to_exp = (opt.expiryDate.astimezone() - datetime.now().astimezone()).total_seconds() / 86400.0
-
-    # Spread and mid price
-    spread = None
-    mid_price = None
-    if opt.bid is not None and opt.ask is not None:
-        spread = float(opt.ask) - float(opt.bid)
-        mid_price = (float(opt.ask) + float(opt.bid)) / 2.0
-
-    # Moneyness
-    moneyness = None
-    if opt.nearPrice is not None and opt.strikePrice is not None:
-        moneyness = (float(opt.nearPrice) - float(opt.strikePrice)) / float(opt.nearPrice)
-
-    # Greeks
-    greeks = opt.OptionGreeks or OptionGreeks()
-
-    feature = OptionFeature(
-        symbol=opt.symbol,
-        displayName=opt.displaySymbol,
-        osiKey=opt.osiKey,
-        optionType=1 if opt.optionType.upper() == "CALL" else 0,
-        strikePrice=float(opt.strikePrice),
-        lastPrice=float(opt.lastPrice) if opt.lastPrice is not None else 0.0,
-        bid=float(opt.bid) if opt.bid is not None else 0.0,
-        ask=float(opt.ask) if opt.ask is not None else 0.0,
-        bidSize=float(opt.bidSize) if opt.bidSize is not None else 0.0,
-        askSize=float(opt.askSize) if opt.askSize is not None else 0.0,
-        volume=float(opt.volume) if opt.volume is not None else 0.0,
-        openInterest=float(opt.openInterest) if opt.openInterest is not None else 0.0,
-        nearPrice=float(opt.nearPrice) if opt.nearPrice is not None else 0.0,
-        inTheMoney=1 if (opt.inTheMoney or "").lower().startswith("y") else 0,
-        delta=float(greeks.delta) if greeks.delta is not None else 0.0,
-        gamma=float(greeks.gamma) if greeks.gamma is not None else 0.0,
-        theta=float(greeks.theta) if greeks.theta is not None else 0.0,
-        vega=float(greeks.vega) if greeks.vega is not None else 0.0,
-        rho=float(greeks.rho) if greeks.rho is not None else 0.0,
-        iv=float(greeks.iv) if greeks.iv is not None else 0.0,
-        daysToExpiration=float(days_to_exp) if days_to_exp is not None else 0.0,
-        spread=spread,
-        midPrice=mid_price,
-        moneyness=moneyness,
-        )
-
-    return feature
-
-
-def try_send(filepath: Path):
-    logger = getLogger()
-    try:
-        #server_url = "http://<MACBOOK_IP>:8000/ingest"
-        server_url="http://100.80.212.116:8000/api/upload_file"
-        with open(filepath, "rb") as f:
-            files = {"file": (filepath.name, f, "application/json")}
-            resp = requests.post(server_url, files=files, timeout=900)
-        if resp.status_code == 200:
-            logger.logMessage(f"Sent {filepath.name} to server.")
-            # Optionally delete after successful send
-            filepath.unlink()
-        else:
-            logger.logMessage(f"[!] Server error {resp.status_code}: keeping file.")
-    except Exception as e:
-        logger.logMessage(f"[!] Network issue: could not send {filepath.name}. Error: {e}")

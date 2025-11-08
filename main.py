@@ -4,15 +4,15 @@ import sys
 import time as pyTime
 import argparse
 from dotenv import load_dotenv
-from services.utils import yes_no
+from shared_options.services.utils import yes_no
 import subprocess
 import signal
 from pathlib import Path
 from logging import FileHandler
 from pathlib import Path
 from logging import FileHandler
-from services.logging.logger_singleton import getLogger
-from services.utils import is_reload_flag_set,clear_reload_flag
+from shared_options.log.logger_singleton import getLogger
+from shared_options.services.utils import is_reload_flag_set,clear_reload_flag
 
 
 # -----------------------------

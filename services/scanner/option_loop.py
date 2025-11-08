@@ -1,11 +1,11 @@
 #option_loop.py
 from datetime import datetime, timedelta, time as dt_time
-from services.logging.logger_singleton import getLogger
+from shared_options.log.logger_singleton import getLogger
 from services.scanner.option_scanner import run_option_scan
 from services.scanner.scanner_utils import wait_interruptible, wait_until_market_open
-from services.alerts import send_alert
-from services.token_status import TokenStatus
-from services.etrade_consumer import TokenExpiredError
+from shared_options.services.alerts import send_alert
+from shared_options.services.token_status import TokenStatus
+from shared_options.services.etrade_consumer import TokenExpiredError
 
 
 # Get the system’s local timezone

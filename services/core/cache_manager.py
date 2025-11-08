@@ -5,7 +5,7 @@ import tempfile
 from datetime import datetime, timedelta
 from threading import RLock
 from services.core.shutdown_handler import ShutdownManager
-from services.logging.logger_singleton import getLogger
+from shared_options.log.logger_singleton import getLogger
 import shutil
 from pathlib import Path
 
