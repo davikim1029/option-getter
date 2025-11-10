@@ -142,7 +142,7 @@ def get_mode_from_prompt():
 
 def scan_lazy():
     from services.threading.thread_manager import ThreadManager   
-    from services.core.shutdown_handler import ShutdownManager
+    from shared_options.services.shutdown_handler import ShutdownManager
     ShutdownManager.init(error_logger=logger.logMessage)
     from services.scanner.scanner_entry import start_scanner
     # Initialize shutdown manager

@@ -1,7 +1,7 @@
 import json
 import threading
 from pathlib import Path
-from services.core.shutdown_handler import ShutdownManager
+from shared_options.services.shutdown_handler import ShutdownManager
 from shared_options.log.logger_singleton import getLogger
 from shared_options.services.utils import try_send
 from datetime import datetime,timezone

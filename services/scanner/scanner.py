@@ -7,7 +7,7 @@ import time as pyTime
 
 from shared_options.log.logger_singleton import getLogger
 from shared_options.services.etrade_consumer import EtradeConsumer
-from services.core.shutdown_handler import ShutdownManager
+from shared_options.services.shutdown_handler import ShutdownManager
 from services.core.cache_manager import Caches
 import services.threading.api_worker as api_worker_mod
 
