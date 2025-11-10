@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta, time as dt_time
 from shared_options.log.logger_singleton import getLogger
 from services.scanner.option_scanner import run_option_scan
-from services.scanner.scanner_utils import wait_interruptible, wait_until_market_open
+from shared_options.services.utils import wait_interruptible, wait_until_market_open
 from shared_options.services.alerts import send_alert
 from shared_options.services.token_status import TokenStatus
 from shared_options.services.etrade_consumer import TokenExpiredError

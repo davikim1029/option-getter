@@ -13,8 +13,8 @@ from services.core.cache_manager import (
     IgnoreTickerCache,
 )
 
-from services.scanner.scanner_utils import option_contract_to_feature
-from shared_options import OptionFeature
+from shared_options.services.utils import option_contract_to_feature
+from shared_options.models import OptionFeature
 from shared_options.services.alerts import send_alert
 from shared_options.services.utils import is_json, write_scratch, get_job_count
 from shared_options.models.OptionDataManager import OptionDataManager
