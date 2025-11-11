@@ -194,7 +194,7 @@ def main():
                 scan_lazy()
                 
             elif mode == "refresh-token":
-                from services.etrade_consumer import force_generate_new_token
+                from shared_options.services.etrade_consumer import force_generate_new_token
                 force_generate_new_token()
                 
             elif mode == "start-server":
