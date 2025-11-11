@@ -12,7 +12,7 @@ from logging import FileHandler
 from pathlib import Path
 from logging import FileHandler
 from shared_options.log.logger_singleton import getLogger
-from shared_options.services.utils import is_reload_flag_set,clear_reload_flag
+from shared_options.services.utils import is_reload_flag_set,clear_reload_flag,send_existing_files
 
 
 # -----------------------------
@@ -111,6 +111,7 @@ def get_mode_from_prompt():
         ("start-server", "Start the alerts server"),
         ("stop-server","Stop the alerts server"),
         ("check-server","Check the alerts server status"),
+        ("send-files","Send existing bundled files"),
         ("quit", "Exit program")
     ]
 
@@ -205,6 +206,8 @@ def main():
              
             elif mode == "check-server":
                 check_scanner_server()
+            elif mode == "send-files":
+                send_existing_files()
                                  
             else:
                 print("Invalid mode selected.")
